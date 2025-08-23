@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <!-- Tanzu Logo - Official Style -->
+  <defs>
+    <linearGradient id="tanzu-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#607D8B"/>
+      <stop offset="100%" style="stop-color:#78909C"/>
+    </linearGradient>
+    <linearGradient id="tanzu-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00BCD4"/>
+      <stop offset="100%" style="stop-color:#26C6DA"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="url(#tanzu-gradient)" stroke="#607D8B" stroke-width="4"/>
+  
+  <!-- Tanzu T -->
+  <rect x="45" y="35" width="38" height="8" rx="4" fill="white"/>
+  <rect x="58" y="35" width="8" height="35" rx="4" fill="white"/>
+  
+  <!-- Tanzu A -->
+  <path d="M35 75 L45 45 L55 75 M40 65 L50 65" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  
+  <!-- Tanzu N -->
+  <path d="M60 45 L60 75 M60 45 L75 75 M75 45 L75 75" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  
+  <!-- Tanzu Z -->
+  <path d="M80 45 L95 45 L80 75 L95 75" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  
+  <!-- Tanzu U -->
+  <path d="M100 45 L100 75 Q100 85 110 85 Q120 85 120 75 L120 45" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  
+  <!-- Cloud native elements -->
+  <circle cx="25" cy="25" r="4" fill="url(#tanzu-accent)" opacity="0.8"/>
+  <circle cx="103" cy="25" r="4" fill="url(#tanzu-accent)" opacity="0.8"/>
+  <circle cx="25" cy="103" r="4" fill="url(#tanzu-accent)" opacity="0.8"/>
+  <circle cx="103" cy="103" r="4" fill="url(#tanzu-accent)" opacity="0.8"/>
+  
+  <!-- Connection dots -->
+  <circle cx="64" cy="25" r="2" fill="white" opacity="0.6"/>
+  <circle cx="64" cy="103" r="2" fill="white" opacity="0.6"/>
+  <circle cx="25" cy="64" r="2" fill="white" opacity="0.6"/>
+  <circle cx="103" cy="64" r="2" fill="white" opacity="0.6"/>
+</svg>

@@ -1,0 +1,66 @@
+{
+  "services": [
+    {
+      "id": "rabbitmq",
+      "name": "RabbitMQ",
+      "description": "Message Queue & Event Streaming",
+      "url": "https://your-rabbitmq-dashboard-url.com",
+      "logo": "/assets/logos/rabbitmq-logo.svg",
+      "color": "blue",
+      "category": "messaging",
+      "credentials": {
+        "username": "your-rabbitmq-username",
+        "password": "your-rabbitmq-password"
+      }
+    },
+    {
+      "id": "hadoop",
+      "name": "Hadoop HDFS",
+      "description": "Distributed Data Processing",
+      "url": "https://hadoop.apache.org",
+      "logo": "/assets/logos/hadoop-logo.svg",
+      "color": "green",
+      "category": "data-processing"
+    },
+    {
+      "id": "greenplum",
+      "name": "Greenplum",
+      "description": "Advanced Analytics Database",
+      "url": "https://greenplum.org",
+      "logo": "/assets/logos/greenplum-logo.svg",
+      "color": "teal",
+      "category": "database"
+    },
+    {
+      "id": "tanzu",
+      "name": "Tanzu Hub",
+      "description": "Cloud Native Platform",
+      "url": "https://your-tanzu-hub-url.com/hub/home",
+      "logo": "/assets/logos/tanzu-logo.svg",
+      "color": "purple",
+      "category": "cloud-platform"
+    },
+    {
+      "id": "postgres",
+      "name": "PostgreSQL",
+      "description": "Advanced Open Source Database",
+      "url": "https://your-pgadmin-url.com/",
+      "logo": "/assets/logos/postgres-logo.svg",
+      "color": "indigo",
+      "category": "database"
+    },
+    {
+      "id": "scdf",
+      "name": "Spring Cloud Data Flow",
+      "description": "Data Pipeline Orchestration",
+      "url": "https://your-scdf-dashboard-url.com/dashboard",
+      "logo": "/assets/logos/scdf-logo.svg",
+      "color": "emerald",
+      "category": "data-flow",
+      "credentials": {
+        "clientId": "your-scdf-client-id",
+        "clientSecret": "your-scdf-client-secret"
+      }
+    }
+  ]
+}

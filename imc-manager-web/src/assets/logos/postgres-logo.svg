@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <!-- PostgreSQL Logo - Official Style -->
+  <defs>
+    <linearGradient id="postgres-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#336791"/>
+      <stop offset="100%" style="stop-color:#4A7C9B"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="url(#postgres-gradient)" stroke="#336791" stroke-width="4"/>
+  
+  <!-- Elephant silhouette -->
+  <path d="M35 75 Q30 65 35 55 Q40 45 50 45 Q60 45 70 45 Q80 45 90 45 Q100 45 105 55 Q110 65 105 75 Q100 85 90 85 Q80 85 70 85 Q60 85 50 85 Q40 85 35 75 Z" fill="white"/>
+  
+  <!-- Elephant trunk -->
+  <path d="M70 55 Q70 65 70 75 Q70 80 65 80 Q60 80 60 75 Q60 65 60 55 Q60 50 65 50 Q70 50 70 55 Z" fill="white"/>
+  
+  <!-- Elephant eye -->
+  <circle cx="80" cy="60" r="3" fill="#336791"/>
+  
+  <!-- Elephant ear -->
+  <ellipse cx="45" cy="55" rx="8" ry="12" fill="white"/>
+  
+  <!-- Elephant body -->
+  <ellipse cx="70" cy="95" rx="15" ry="20" fill="white"/>
+  
+  <!-- Elephant legs -->
+  <rect x="60" y="95" width="6" height="15" rx="3" fill="white"/>
+  <rect x="74" y="95" width="6" height="15" rx="3" fill="white"/>
+  
+  <!-- Elephant tail -->
+  <path d="M55 90 Q50 85 55 80 Q60 75 65 80 Q60 85 55 90 Z" fill="white"/>
+  
+  <!-- Database representation -->
+  <rect x="25" y="25" width="78" height="12" rx="6" fill="white" opacity="0.9"/>
+  <rect x="25" y="40" width="78" height="8" rx="4" fill="white" opacity="0.7"/>
+  <rect x="25" y="51" width="78" height="8" rx="4" fill="white" opacity="0.7"/>
+  
+  <!-- Connection lines -->
+  <line x1="64" y1="63" x2="64" y2="70" stroke="white" stroke-width="2" opacity="0.8"/>
+</svg>

@@ -1,0 +1,18 @@
+applications:
+  - name: imc-manager
+    memory: 1G
+    disk_quota: 1G
+    instances: 1
+    buildpacks:
+      - java_buildpack
+    env:
+      IMC_MANAGER_BASIC_USER: admin
+      IMC_MANAGER_BASIC_PASS: change-me
+      LOG_LEVEL: INFO
+    services:
+      - messaging-service-name  # Replace with your RabbitMQ service name
+      - scdf-service-name       # Replace with your SCDF service name
+      # Add other services as needed
+    health-check-type: http
+    health-check-http-endpoint: /actuator/health
+    timeout: 180

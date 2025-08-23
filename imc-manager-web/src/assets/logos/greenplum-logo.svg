@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <!-- Greenplum Logo - Stylized Hexagonal Shape -->
+  <defs>
+    <linearGradient id="greenplum-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#20B2AA"/>
+      <stop offset="100%" style="stop-color:#48D1CC"/>
+    </linearGradient>
+    <linearGradient id="greenplum-blue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4169E1"/>
+      <stop offset="100%" style="stop-color:#6495ED"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="60" fill="url(#greenplum-gradient)" stroke="#20B2AA" stroke-width="4"/>
+  
+  <!-- Main hexagon -->
+  <polygon points="64,25 85,35 85,55 64,65 43,55 43,35" fill="url(#greenplum-blue)" stroke="#4169E1" stroke-width="2"/>
+  
+  <!-- Inner hexagons -->
+  <polygon points="64,35 75,42 75,55 64,62 53,55 53,42" fill="url(#greenplum-gradient)" stroke="#20B2AA" stroke-width="1"/>
+  <polygon points="64,45 70,50 70,58 64,63 58,58 58,50" fill="url(#greenplum-blue)" stroke="#4169E1" stroke-width="1"/>
+  
+  <!-- Data nodes representation -->
+  <circle cx="64" cy="75" r="8" fill="url(#greenplum-blue)"/>
+  <circle cx="50" cy="80" r="4" fill="url(#greenplum-gradient)"/>
+  <circle cx="78" cy="80" r="4" fill="url(#greenplum-gradient)"/>
+  
+  <!-- Connection lines -->
+  <line x1="64" y1="67" x2="64" y2="75" stroke="white" stroke-width="2" opacity="0.8"/>
+  <line x1="50" y1="76" x2="58" y2="80" stroke="white" stroke-width="1" opacity="0.6"/>
+  <line x1="78" y1="76" x2="70" y2="80" stroke="white" stroke-width="1" opacity="0.6"/>
+</svg>
