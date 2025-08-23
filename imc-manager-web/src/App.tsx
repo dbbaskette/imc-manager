@@ -131,72 +131,45 @@ function Sidebar() {
 }
 
 function Dashboard({ recent }: { recent: EventDto[] }) {
-  // Component configurations matching Apps page with fallback URLs
-  const pipelineComponents = [
-    { 
-      name: 'hdfsWatcher', 
-      label: 'hdfsWatcher', 
-      description: 'Monitors document storage',
-      endpoints: { state: "/api/processing/state" },
-      statusField: "enabled"
-    },
-    { 
-      name: 'textProc', 
-      label: 'textProc', 
-      description: 'Extracts and processes text',
-      endpoints: { state: "/api/processing/state" },
-      statusField: "enabled"
-    },
-    { 
-      name: 'embedProc', 
-      label: 'embedProc', 
-      description: 'Generates vector embeddings',
-      endpoints: { state: "/api/processing/state" },
-      statusField: "enabled"
-    }
-  ]
-
-  // API-based component states
-  const [componentStates, setComponentStates] = useState<Record<string, 'STARTED' | 'STOPPED' | 'IDLE'>>({})
+  // Real service data from service registry
+  const [services, setServices] = useState<Array<{
+    name: string;
+    displayName: string;
+    description: string;
+    status: string;
+  }>>([]);
   
+  const [overview, setOverview] = useState<{
+    totalServices: number;
+    activeServices: number;
+    overallStatus: string;
+  } | null>(null);
+
+  // Fetch services from the backend
   useEffect(() => {
-    const checkAllComponentStates = async () => {
-      const newStates: Record<string, 'STARTED' | 'STOPPED' | 'IDLE'> = {}
-      
-      await Promise.all(pipelineComponents.map(async (component) => {
-        try {
-          // Try proxy first
-          const encodedApp = encodeURIComponent(component.name)
-          let res = await fetch(`/api/proxy/${encodedApp}${component.endpoints.state}`, { credentials: 'include' })
-          
-          // Proxy is the only way - no hardcoded fallbacks
-          
-          if (res.ok) {
-            const data = await res.json()
-            console.log(`[${component.name}] Dashboard status response:`, data)
-            const processingEnabled = data[component.statusField] || data.enabled || data.processing
-            newStates[component.name] = processingEnabled ? 'STARTED' : 'STOPPED'
-          } else {
-            console.warn(`[${component.name}] Dashboard status check failed:`, res.status)
-            newStates[component.name] = 'IDLE'
-          }
-        } catch (error) {
-          console.error(`[${component.name}] Dashboard status error:`, error)
-          newStates[component.name] = 'IDLE'
+    const fetchServices = async () => {
+      try {
+        // Get RAG pipeline overview
+        const overviewResponse = await fetch('/api/services/rag-pipeline/overview');
+        if (overviewResponse.ok) {
+          const overviewData = await overviewResponse.json();
+          setOverview(overviewData);
+          setServices(overviewData.services || []);
         }
-      }))
-      
-      setComponentStates(newStates)
-    }
-    
-    checkAllComponentStates()
-    const interval = setInterval(checkAllComponentStates, 10000) // Check every 10 seconds
-    return () => clearInterval(interval)
-  }, [])
+      } catch (error) {
+        console.error('Failed to fetch services:', error);
+      }
+    };
+
+    fetchServices();
+    const interval = setInterval(fetchServices, 10000); // Refresh every 10 seconds
+    return () => clearInterval(interval);
+  }, []);
   
   const totalEvents = recent.length
   const errorEvents = recent.filter(e => e.status?.toLowerCase() === 'error').length
-  const activeComponents = Object.values(componentStates).filter(state => state === 'STARTED').length
+  const activeComponents = overview ? overview.activeServices : 0
+  const totalComponents = overview ? overview.totalServices : 0
 
   return (
     <div className="p-6">
@@ -222,7 +195,7 @@ function Dashboard({ recent }: { recent: EventDto[] }) {
             </div>
             <div className="text-2xl">🟢</div>
           </div>
-          <p className="text-xs text-gray-500 mt-2">out of {pipelineComponents.length} total</p>
+          <p className="text-xs text-gray-500 mt-2">out of {totalComponents} total</p>
         </div>
 
         {/* Total Events */}
@@ -255,16 +228,15 @@ function Dashboard({ recent }: { recent: EventDto[] }) {
             <div>
               <p className="text-sm font-medium text-gray-400">Pipeline Health</p>
               <p className={`text-lg font-bold mt-2 ${
-                activeComponents === pipelineComponents.length && errorEvents === 0 ? 'text-green-400' :
-                activeComponents > pipelineComponents.length / 2 ? 'text-yellow-400' : 'text-red-400'
+                overview && overview.overallStatus === 'HEALTHY' ? 'text-green-400' :
+                overview && overview.overallStatus === 'DEGRADED' ? 'text-yellow-400' : 'text-red-400'
               }`}>
-                {activeComponents === pipelineComponents.length && errorEvents === 0 ? 'HEALTHY' :
-                 activeComponents > pipelineComponents.length / 2 ? 'DEGRADED' : 'CRITICAL'}
+                {overview ? overview.overallStatus : 'UNKNOWN'}
               </p>
             </div>
             <div className="text-2xl">
-              {activeComponents === pipelineComponents.length && errorEvents === 0 ? '🟢' :
-               activeComponents > pipelineComponents.length / 2 ? '🟡' : '🔴'}
+              {overview && overview.overallStatus === 'HEALTHY' ? '🟢' :
+               overview && overview.overallStatus === 'DEGRADED' ? '🟡' : '🔴'}
             </div>
           </div>
           <p className="text-xs text-gray-500 mt-2">overall status</p>
@@ -277,19 +249,24 @@ function Dashboard({ recent }: { recent: EventDto[] }) {
         <div className="bg-gray-800/50 border border-gray-700 rounded-lg shadow-lg p-6">
           <div className="flex items-center gap-3 mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
-              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-              <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
-              <line x1="12" y1="22.08" x2="12" y2="12"/>
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14,2 14,8 20,8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10,9 9,9 8,9"/>
+              <polyline points="10,5 9,5 8,5"/>
+              <polyline points="10,21 9,21 8,21"/>
+              <polyline points="10,17 9,17 8,17"/>
+              <polyline points="10,13 9,13 8,13"/>
             </svg>
             <h3 className="text-lg font-semibold text-white">RAG Pipeline</h3>
           </div>
           <div className="space-y-3">
-            {pipelineComponents.map((component) => {
-              const state = componentStates[component.name] || 'IDLE'
-              const isActive = state === 'STARTED'
+            {services.map((service) => {
+              const isActive = service.status === 'STARTED'
               return (
-                <div key={component.name} className="flex items-center justify-between">
-                  <span className="text-gray-300 text-sm">{component.label}</span>
+                <div key={service.name} className="flex items-center justify-between">
+                  <span className="text-gray-300 text-sm">{service.displayName}</span>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     isActive ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
                   }`}>
@@ -310,9 +287,14 @@ function Dashboard({ recent }: { recent: EventDto[] }) {
         <div className="bg-gray-800/50 border border-gray-700 rounded-lg shadow-lg p-6">
           <div className="flex items-center gap-3 mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400">
-              <path d="M12 2v20M2 12h20"/>
-              <circle cx="12" cy="12" r="4"/>
-              <path d="m9 12 2 2 4-4"/>
+              <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.6-.4-1-1-1h-2"/>
+              <path d="M5 17H3c-.6 0-1-.4-1-1v-3c0-.6.4-1 1-1h2"/>
+              <path d="M17 17V5c0-.6-.4-1-1-1H8c-.6 0-1 .4-1 1v12"/>
+              <path d="M7 14h10"/>
+              <path d="M10 14v4"/>
+              <path d="M14 14v4"/>
+              <path d="M7 10h10"/>
+              <path d="M7 7h10"/>
             </svg>
             <h3 className="text-lg font-semibold text-white">Telemetry Processing</h3>
           </div>
@@ -377,61 +359,136 @@ function Dashboard({ recent }: { recent: EventDto[] }) {
 }
 
 function RAGPipeline() {
-  // Component configurations for RAG Pipeline
-  const pipelineComponents = [
-    { 
-      name: 'hdfsWatcher', 
-      label: 'HDFS Watcher', 
-      description: 'Monitors document storage for new files',
-      endpoints: { state: "/api/processing/state" },
-      statusField: "enabled"
-    },
-    { 
-      name: 'textProc', 
-      label: 'Text Processor', 
-      description: 'Extracts and processes text from documents',
-      endpoints: { state: "/api/processing/state" },
-      statusField: "enabled"
-    },
-    { 
-      name: 'embedProc', 
-      label: 'Embedding Processor', 
-      description: 'Generates vector embeddings for processed text',
-      endpoints: { state: "/api/processing/state" },
-      statusField: "enabled"
-    }
-  ]
-
-  const [componentStates, setComponentStates] = useState<Record<string, 'STARTED' | 'STOPPED' | 'IDLE'>>({})
+  // Real service data from service registry
+  const [services, setServices] = useState<Array<{
+    name: string;
+    displayName: string;
+    description: string;
+    status: string;
+    lastCheck: string;
+  }>>([]);
   
+  const [loading, setLoading] = useState(true);
+  const [overview, setOverview] = useState<{
+    totalServices: number;
+    activeServices: number;
+    overallStatus: string;
+  } | null>(null);
+
+  // Fetch services from the backend
   useEffect(() => {
-    const checkAllComponentStates = async () => {
-      const newStates: Record<string, 'STARTED' | 'STOPPED' | 'IDLE'> = {}
+    const fetchServices = async () => {
+      try {
+        setLoading(true);
+        
+        // Get RAG pipeline overview
+        const overviewResponse = await fetch('/api/services/rag-pipeline/overview');
+        if (overviewResponse.ok) {
+          const overviewData = await overviewResponse.json();
+          setOverview(overviewData);
+          setServices(overviewData.services || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch services:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchServices();
+    const interval = setInterval(fetchServices, 10000); // Refresh every 10 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  // Service control functions
+  const startService = async (serviceName: string) => {
+    try {
+      const response = await fetch(`/api/services/${serviceName}/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
       
-      await Promise.all(pipelineComponents.map(async (component) => {
+      if (response.ok) {
+        // Refresh services after action
+        setTimeout(() => {
+          const event = new Event('refresh-services');
+          window.dispatchEvent(event);
+        }, 1000);
+      }
+    } catch (error) {
+      console.error(`Failed to start ${serviceName}:`, error);
+    }
+  };
+
+  const stopService = async (serviceName: string) => {
+    try {
+      const response = await fetch(`/api/services/${serviceName}/stop`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        // Refresh services after action
+        setTimeout(() => {
+          const event = new Event('refresh-services');
+          window.dispatchEvent(event);
+        }, 1000);
+      }
+    } catch (error) {
+      console.error(`Failed to stop ${serviceName}:`, error);
+    }
+  };
+
+  const toggleService = async (serviceName: string) => {
+    try {
+      const response = await fetch(`/api/services/${serviceName}/toggle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        // Refresh services after action
+        setTimeout(() => {
+          const event = new Event('refresh-services');
+          window.dispatchEvent(event);
+        }, 1000);
+      }
+    } catch (error) {
+      console.error(`Failed to toggle ${serviceName}:`, error);
+    }
+  };
+
+  // Listen for refresh events
+  useEffect(() => {
+    const handleRefresh = () => {
+      const fetchServices = async () => {
         try {
-          const encodedApp = encodeURIComponent(component.name)
-          let res = await fetch(`/api/proxy/${encodedApp}${component.endpoints.state}`, { credentials: 'include' })
-          
-          if (res.ok) {
-            const data = await res.json()
-            const processingEnabled = data[component.statusField] || data.enabled || data.processing
-            newStates[component.name] = processingEnabled ? 'STARTED' : 'STOPPED'
-          } else {
-            newStates[component.name] = 'IDLE'
+          const overviewResponse = await fetch('/api/services/rag-pipeline/overview');
+          if (overviewResponse.ok) {
+            const overviewData = await overviewResponse.json();
+            setOverview(overviewData);
+            setServices(overviewData.services || []);
           }
         } catch (error) {
-          newStates[component.name] = 'IDLE'
+          console.error('Failed to refresh services:', error);
         }
-      }))
-      
-      setComponentStates(newStates)
-    }
-    
-    checkAllComponentStates()
-    const interval = setInterval(checkAllComponentStates, 10000)
-    return () => clearInterval(interval)
-  }, [])
+      };
+      fetchServices();
+    };
+
+    window.addEventListener('refresh-services', handleRefresh);
+    return () => window.removeEventListener('refresh-services', handleRefresh);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-400">Loading RAG Pipeline services...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -445,6 +502,49 @@ function RAGPipeline() {
           <button className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-md text-sm font-medium text-white">Restart Pipeline</button>
         </div>
       </div>
+
+      {/* Pipeline Overview Cards */}
+      {overview && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-400">Total Services</p>
+                <p className="text-3xl font-bold text-blue-400 mt-2">{overview.totalServices}</p>
+              </div>
+              <div className="text-2xl">🔗</div>
+            </div>
+          </div>
+
+          <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-400">Active Services</p>
+                <p className="text-3xl font-bold text-green-400 mt-2">{overview.activeServices}</p>
+              </div>
+              <div className="text-2xl">🟢</div>
+            </div>
+          </div>
+
+          <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-400">Overall Status</p>
+                <p className={`text-lg font-bold mt-2 ${
+                  overview.overallStatus === 'HEALTHY' ? 'text-green-400' :
+                  overview.overallStatus === 'DEGRADED' ? 'text-yellow-400' : 'text-red-400'
+                }`}>
+                  {overview.overallStatus}
+                </p>
+              </div>
+              <div className="text-2xl">
+                {overview.overallStatus === 'HEALTHY' ? '🟢' :
+                 overview.overallStatus === 'DEGRADED' ? '🟡' : '🔴'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pipeline Flow Visualization */}
       <div className="bg-gray-800/50 border border-gray-700 rounded-lg shadow-lg mb-8">
@@ -475,14 +575,13 @@ function RAGPipeline() {
             
             {/* Middle Layer - Processing Components */}
             <div className="flex justify-center items-start space-x-8">
-              {pipelineComponents.map((component) => {
-                const componentState = componentStates[component.name] || 'IDLE'
-                const isActive = componentState === 'STARTED'
-                const isStopped = componentState === 'STOPPED'
-                const isError = componentState === 'IDLE'
+              {services.map((service) => {
+                const isActive = service.status === 'STARTED';
+                const isStopped = service.status === 'STOPPED';
+                const isError = service.status === 'ERROR' || service.status === 'UNKNOWN';
                 
                 return (
-                  <div key={component.name} className="flex flex-col items-center">
+                  <div key={service.name} className="flex flex-col items-center">
                     <div className={`relative px-8 py-6 rounded-lg border-2 min-w-[160px] text-center transition-all duration-300 ${
                       isActive ? 'bg-green-900/20 border-green-500' :
                       isStopped ? 'bg-red-900/20 border-red-500' :
@@ -500,8 +599,8 @@ function RAGPipeline() {
                       </div>
                       
                       {/* Component info */}
-                      <h4 className="font-semibold text-white text-lg">{component.label}</h4>
-                      <p className="text-xs text-gray-400 mt-2">{component.description}</p>
+                      <h4 className="font-semibold text-white text-lg">{service.displayName}</h4>
+                      <p className="text-xs text-gray-400 mt-2">{service.description}</p>
                       
                       {/* Status */}
                       <div className="mt-3">
@@ -511,7 +610,7 @@ function RAGPipeline() {
                           isError ? 'bg-red-500/20 text-red-300 animate-pulse' :
                           'bg-gray-500/20 text-gray-300'
                         }`}>
-                          {isError ? 'ERROR' : componentState}
+                          {service.status}
                         </span>
                       </div>
                     </div>
@@ -578,31 +677,63 @@ function RAGPipeline() {
         </div>
       </div>
 
-      {/* Component Details */}
+      {/* Service Control Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {pipelineComponents.map((component) => {
-          const state = componentStates[component.name] || 'IDLE'
-          const isActive = state === 'STARTED'
+        {services.map((service) => {
+          const isActive = service.status === 'STARTED';
           
           return (
-            <div key={component.name} className="bg-gray-800/50 border border-gray-700 rounded-lg shadow-lg p-6">
+            <div key={service.name} className="bg-gray-800/50 border border-gray-700 rounded-lg shadow-lg p-6">
               <div className="flex items-center justify-between mb-4">
-                <h4 className="text-lg font-semibold text-white">{component.label}</h4>
+                <h4 className="text-lg font-semibold text-white">{service.displayName}</h4>
                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                   isActive ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
                 }`}>
                   {isActive ? 'ACTIVE' : 'INACTIVE'}
                 </span>
               </div>
-              <p className="text-gray-400 text-sm mb-4">{component.description}</p>
+              <p className="text-gray-400 text-sm mb-4">{service.description}</p>
+              
+              {/* Service Control Buttons */}
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => startService(service.name)}
+                  disabled={isActive}
+                  className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                    isActive 
+                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                      : 'bg-green-600 hover:bg-green-500 text-white'
+                  }`}
+                >
+                  Start
+                </button>
+                <button
+                  onClick={() => stopService(service.name)}
+                  disabled={!isActive}
+                  className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                    !isActive 
+                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                      : 'bg-red-600 hover:bg-red-500 text-white'
+                  }`}
+                >
+                  Stop
+                </button>
+                <button
+                  onClick={() => toggleService(service.name)}
+                  className="px-3 py-1 rounded text-xs font-medium bg-blue-600 hover:bg-blue-500 text-white"
+                >
+                  Toggle
+                </button>
+              </div>
+              
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">Status:</span>
-                  <span className={isActive ? 'text-green-400' : 'text-red-400'}>{state}</span>
+                  <span className={isActive ? 'text-green-400' : 'text-red-400'}>{service.status}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">Last Check:</span>
-                  <span className="text-gray-300">{new Date().toLocaleTimeString()}</span>
+                  <span className="text-gray-300">{service.lastCheck}</span>
                 </div>
               </div>
             </div>
