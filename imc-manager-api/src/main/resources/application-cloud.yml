@@ -1,0 +1,12 @@
+# Cloud Foundry specific configuration
+
+# Basic auth from environment
+imc-manager:
+  basic:
+    user: ${IMC_MANAGER_BASIC_USER:admin}
+    pass: ${IMC_MANAGER_BASIC_PASS:changeme}
+
+logging:
+  level:
+    com.insurancemegacorp: INFO
+    org.springframework.cloud: INFO

@@ -1,0 +1,52 @@
+[
+  {
+    "name": "hdfsWatcher",
+    "displayName": "HDFS Watcher", 
+    "description": "Monitors document storage for new files",
+    "hasFileManager": true,
+    "serviceRegistryName": "hdfswatcher",
+    "endpoints": {
+      "state": "/api/processing/state",
+      "start": "/api/processing/start", 
+      "stop": "/api/processing/stop",
+      "toggle": "/api/processing/toggle",
+      "files": "/api/files",
+      "status": "/api/status"
+    },
+    "statusField": "enabled",
+    "additionalControls": ["reprocess-all", "clear", "process-now"]
+  },
+  {
+    "name": "textProc",
+    "displayName": "Text Processor",
+    "description": "Extracts and processes text from documents",
+    "hasFileManager": false,
+    "serviceRegistryName": "textproc",
+    "endpoints": {
+      "state": "/api/processing/state",
+      "start": "/api/processing/start",
+      "stop": "/api/processing/stop", 
+      "toggle": "/api/processing/toggle",
+      "reset": "/api/processing/reset",
+      "processedFiles": "/api/files/processed",
+      "pendingFiles": "/api/files/pending"
+    },
+    "statusField": "enabled",
+    "additionalControls": ["reset"]
+  },
+  {
+    "name": "embedProc", 
+    "displayName": "Embedding Processor",
+    "description": "Generates vector embeddings from processed text",
+    "hasFileManager": false,
+    "serviceRegistryName": "embedproc",
+    "endpoints": {
+      "state": "/api/processing/state",
+      "start": "/api/processing/start",
+      "stop": "/api/processing/stop",
+      "toggle": "/api/processing/toggle"
+    },
+    "statusField": "enabled",
+    "additionalControls": []
+  }
+]
