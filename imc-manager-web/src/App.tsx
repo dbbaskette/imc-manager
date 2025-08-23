@@ -50,29 +50,54 @@ function Sidebar() {
       to: '/rag-pipeline', 
       label: 'RAG Pipeline', 
       icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14,2 14,8 20,8"/>
-        <line x1="16" y1="13" x2="8" y2="13"/>
-        <line x1="16" y1="17" x2="8" y2="17"/>
-        <polyline points="10,9 9,9 8,9"/>
-        <polyline points="10,5 9,5 8,5"/>
-        <polyline points="10,21 9,21 8,21"/>
-        <polyline points="10,17 9,17 8,17"/>
-        <polyline points="10,13 9,13 8,13"/>
+        {/* Input document */}
+        <path d="M4 4h6v6H4z" fill="currentColor" opacity="0.2"/>
+        <path d="M4 4h6v6H4z" stroke="currentColor"/>
+        {/* Text lines in document */}
+        <line x1="6" y1="6" x2="8" y2="6"/>
+        <line x1="6" y1="8" x2="8" y2="8"/>
+        <line x1="6" y1="10" x2="8" y2="10"/>
+        
+        {/* Processing arrow */}
+        <path d="M12 7l2 2-2 2"/>
+        
+        {/* Processing/transformation zone */}
+        <rect x="16" y="4" width="4" height="8" rx="1" fill="currentColor" opacity="0.1" stroke="currentColor"/>
+        <path d="M17 6l1 1-1 1"/>
+        <path d="M17 9l1 1-1 1"/>
+        
+        {/* Output vectors/embeddings */}
+        <circle cx="18" cy="16" r="2" fill="currentColor" opacity="0.3"/>
+        <circle cx="14" cy="18" r="1.5" fill="currentColor" opacity="0.3"/>
+        <circle cx="22" cy="18" r="1.5" fill="currentColor" opacity="0.3"/>
+        
+        {/* Connection lines */}
+        <line x1="18" y1="14" x2="14" y2="16.5" stroke="currentColor" opacity="0.5"/>
+        <line x1="18" y1="14" x2="22" y2="16.5" stroke="currentColor" opacity="0.5"/>
       </svg>
     },
     { 
       to: '/telemetry', 
       label: 'Telemetry Processing', 
       icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.6-.4-1-1-1h-2"/>
-        <path d="M5 17H3c-.6 0-1-.4-1-1v-3c0-.6.4-1 1-1h2"/>
-        <path d="M17 17V5c0-.6-.4-1-1-1H8c-.6 0-1 .4-1 1v12"/>
-        <path d="M7 14h10"/>
+        {/* Car body */}
+        <path d="M7 17h10"/>
         <path d="M10 14v4"/>
         <path d="M14 14v4"/>
-        <path d="M7 10h10"/>
-        <path d="M7 7h10"/>
+        {/* Car top */}
+        <path d="M17 17V5c0-.6-.4-1-1-1H8c-.6 0-1 .4-1 1v12"/>
+        {/* Windows */}
+        <rect x="9" y="6" width="6" height="4" rx="1" fill="currentColor" opacity="0.1"/>
+        {/* Wheels */}
+        <circle cx="7" cy="17" r="2" fill="currentColor" opacity="0.3"/>
+        <circle cx="17" cy="17" r="2" fill="currentColor" opacity="0.3"/>
+        {/* Headlights */}
+        <circle cx="8" cy="7" r="0.5" fill="currentColor"/>
+        <circle cx="16" cy="7" r="0.5" fill="currentColor"/>
+        {/* Data/telemetry indicators */}
+        <path d="M20 12h2" stroke="currentColor" opacity="0.6"/>
+        <path d="M20 15h2" stroke="currentColor" opacity="0.6"/>
+        <path d="M20 18h2" stroke="currentColor" opacity="0.6"/>
       </svg>
     },
     { 
