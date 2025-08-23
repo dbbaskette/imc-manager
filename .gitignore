@@ -103,3 +103,4 @@ temp/
 
 # Sensitive configuration files
 imc-manager-web/src/config/services.json
+manifest.yml
