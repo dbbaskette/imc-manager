@@ -1,116 +1,125 @@
 # IMC Manager
 
-Insurance MegaCorp System Management Dashboard - A unified interface for managing and monitoring IMC platform components and services.
+Insurance MegaCorp Manager Application - A Spring Boot application with React frontend for managing insurance operations.
 
-## Architecture
+## Project Structure
 
-This project uses a multi-module Maven build that combines:
-- **React Frontend** (`imc-manager-web/`) - Modern React/TypeScript UI with Tailwind CSS
-- **Spring Boot Backend** (`imc-manager-api/`) - REST API and static resource serving
+- `imc-manager-api/` - Spring Boot backend API
+- `imc-manager-web/` - React frontend application
+- `scripts/` - Deployment and utility scripts
+- `manifest.yml` - Cloud Foundry application manifest
 
-The build process automatically:
-1. Installs npm dependencies
-2. Builds the React frontend 
-3. Copies built assets to Spring Boot's static resources
-4. Packages everything into a single executable JAR
-
-## Development
+## Quick Start
 
 ### Prerequisites
+
 - Java 21+
-- Node.js 18+
-- Maven 3.6+
+- Maven 3.8+
+- Cloud Foundry CLI (`cf`)
+- Node.js 18+ (for frontend development)
 
-### Local Development
+### Configuration Setup
 
-1. **Start the React dev server:**
+1. **Copy the configuration template:**
    ```bash
-   cd imc-manager-web
-   npm install
-   npm run dev
+   cp scripts/config.env.template scripts/config.env
    ```
-   Frontend available at http://localhost:5173
 
-2. **Start the Spring Boot API (in another terminal):**
+2. **Edit `scripts/config.env` with your values:**
    ```bash
-   cd imc-manager-api
-   mvn spring-boot:run
+   # Cloud Foundry Configuration
+   CF_ORG=your-org-name
+   CF_SPACE=your-space-name
+   CF_APP_NAME=imc-manager
+   
+   # Basic Authentication
+   IMC_MANAGER_BASIC_USER=admin
+   IMC_MANAGER_BASIC_PASS=your-secure-password
    ```
-   API available at http://localhost:8080
 
-### Building for Production
+### Development
 
-Build the complete application (frontend + backend):
+#### Backend (Spring Boot)
 ```bash
-mvn clean package
+cd imc-manager-api
+mvn spring-boot:run
 ```
 
-This creates `imc-manager-api/target/imc-manager-api-1.0.0.jar` with embedded frontend.
-
-## Cloud Foundry Deployment
-
-### Prerequisites
-- CF CLI installed and logged in
-- Access to required CF services:
-  - `imc-services` (Service Registry)
-
-### Deploy
+#### Frontend (React)
 ```bash
-# Build the application
-mvn clean package
-
-# Deploy to Cloud Foundry
-cf push
+cd imc-manager-web
+npm install
+npm run dev
 ```
 
-### Configuration
+### Deployment
 
-The application uses different profiles:
-- **Local**: `application.yml` 
-- **Cloud Foundry**: `application-cloud.yml` (auto-activated)
+**Always use the provided deployment script for testing:**
 
-Environment variables for Cloud Foundry:
-- `IMC_MANAGER_BASIC_USER` - Basic auth username (default: admin)
-- `IMC_MANAGER_BASIC_PASS` - Basic auth password (default: change-me)
+```bash
+# From the project root directory
+./scripts/push-mgr.sh
+```
 
-### Service Bindings
+This script will:
+1. Load configuration from `scripts/config.env`
+2. Build the application with Maven
+3. Push to Cloud Foundry
+4. Set environment variables
+5. Start the application
 
-The app expects these CF services (defined in `manifest.yml`):
-- `imc-services` - Service Registry for service discovery
+### Manual Deployment (Not Recommended)
 
-## Features
+If you need to deploy manually:
 
-### Current
-- 🏠 **Dashboard** - System overview with component status
-- 🔧 **Services** - Service management interface
-- 📊 **Monitoring** - System monitoring dashboard  
-- 🚀 **Deployment** - Deployment management tools
-- 🔒 **Security** - Basic authentication
-- 📱 **Responsive** - Mobile-friendly dark theme UI
+```bash
+# Build
+mvn clean package -DskipTests
 
-### Planned
-- Real-time service health monitoring
-- Integration with existing IMC services
-- Advanced deployment workflows
-- System metrics and alerting
+# Push to Cloud Foundry
+cf push imc-manager -p imc-manager-api/target/imc-manager-api-1.0.0.jar
 
-## API Endpoints
+# Set environment variables
+cf set-env imc-manager IMC_MANAGER_BASIC_USER admin
+cf set-env imc-manager IMC_MANAGER_BASIC_PASS your-password
 
-- `GET /api/health` - Health check
-- `GET /api/info` - Application info
-- `GET /actuator/health` - Spring Boot health
-- `GET /` - Serves the React frontend
+# Start
+cf start imc-manager
+```
+
+## Configuration Files
+
+- `application.yml` - Default Spring Boot configuration
+- `application-cloud.yml` - Cloud Foundry specific configuration
+- `scripts/config.env` - Environment-specific configuration (not in git)
+- `scripts/config.env.template` - Configuration template (in git)
 
 ## Security
 
-- Basic authentication required for all endpoints except health checks
-- Credentials configurable via environment variables
-- HTTPS recommended for production deployments
+- Basic authentication is enabled by default
+- Credentials are configurable via environment variables
+- Change default passwords in production
+
+## Troubleshooting
+
+### Check Application Status
+```bash
+cf app imc-manager
+```
+
+### View Logs
+```bash
+cf logs imc-manager --recent
+```
+
+### Restart Application
+```bash
+cf restart imc-manager
+```
 
 ## Development Notes
 
-Based on the proven architecture from `imc-ragmon`, this project provides:
-- Seamless integration between React frontend and Spring Boot backend
-- Cloud Foundry native deployment with service binding support
-- Modern UI components with consistent theming
-- Production-ready build pipeline
+- The application automatically detects Cloud Foundry environment
+- Profile-specific configuration is loaded automatically
+- Environment variables override configuration file values
+- Always use `./scripts/push-mgr.sh` for deployment to ensure consistency
