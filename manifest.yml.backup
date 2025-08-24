@@ -1,0 +1,26 @@
+applications:
+  - name: imc-manager
+    memory: 1G
+    instances: 1
+    # Push the pre-built JAR (contains frontend static resources)
+    path: ./imc-manager-api/target/imc-manager-api-1.0.3.jar
+    buildpacks:
+      - java_buildpack_offline
+    env:
+      # Use cloud profile for VCAP_SERVICES parsing
+      SPRING_PROFILES_ACTIVE: cloud
+      # Pin JVM version for legacy Java buildpack (resolves UnsupportedClassVersionError)
+      JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 21.+ } }'
+      
+      # Authentication (change in production)
+      IMC_MANAGER_BASIC_USER: admin
+      IMC_MANAGER_BASIC_PASS: changeme
+
+    # Service bindings - Cloud Foundry Services
+    services:
+      - imc-services
+      - scdf-rag
+      - messaging-c856b29a-1c7e-4fd5-ab3b-0633b90869cc
+
+
+
