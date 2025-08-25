@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Link, Route, Routes, useLocation } from 'react-router-dom'
 import { useSharedSSE, type EventDto } from './lib/sse'
+import EnhancedTelemetry from './components/EnhancedTelemetry'
 
 function Header({ connected }: { connected: boolean }) {
   return (
@@ -1394,71 +1395,29 @@ function TelemetryProcessing() {
         </div>
       </div>
 
-      {/* Telemetry Flow Visualization */}
+      {/* Enhanced Telemetry Flow Visualization */}
       <div className="bg-gray-800/50 border border-gray-700 rounded-lg shadow-lg mb-8">
         <div className="p-4 border-b border-gray-700">
-          <h3 className="text-lg font-semibold text-white">Data Flow Architecture</h3>
+          <h3 className="text-lg font-semibold text-white">Enhanced Data Flow Architecture</h3>
           <p className="text-sm text-gray-400 mt-1">Real-time telemetry processing pipeline</p>
         </div>
         
-        <div className="p-8">
-          {/* Flow Diagram */}
-          <div className="space-y-8">
-            {/* Top Layer - Vehicle Sources */}
-            <div className="flex justify-center">
-              <div className="bg-gray-700/30 border-2 border-gray-600 rounded-lg px-12 py-6 text-center">
-                <h3 className="text-xl font-semibold text-white">Vehicle Fleet</h3>
-                <p className="text-sm text-gray-400 mt-1">Real-time GPS & Sensor Data</p>
-              </div>
-            </div>
-            
-            {/* Connecting lines */}
-            <div className="flex justify-center">
-              <div className="w-px h-12 bg-gray-600"></div>
-            </div>
-            
-            {/* Middle Layer - Processing Components */}
-            <div className="flex justify-center items-start space-x-8">
-              {telemetryComponents.map((component) => (
-                <div key={component.name} className="flex flex-col items-center">
-                  <div className="bg-green-900/20 border-2 border-green-500 rounded-lg px-8 py-6 text-center min-w-[160px]">
-                    <h4 className="font-semibold text-white text-lg">{component.label}</h4>
-                    <p className="text-xs text-gray-400 mt-2">{component.description}</p>
-                    <div className="mt-3">
-                      <span className="text-xs font-medium px-3 py-1 rounded-full bg-green-500/20 text-green-300">
-                        {component.status}
-                      </span>
-                    </div>
-                    <div className="mt-2">
-                      <span className="text-xs text-blue-300">{component.throughput}</span>
-                    </div>
-                  </div>
-                  
-                  {/* Connecting line down */}
-                  <div className="w-px h-12 bg-gray-600 mt-4"></div>
-                </div>
-              ))}
-            </div>
-            
-            {/* Horizontal connecting line */}
-            <div className="flex justify-center">
-              <div className="w-3/4 h-px bg-gray-600"></div>
-            </div>
-            
-            {/* Bottom Layer - Data Storage */}
-            <div className="flex justify-center">
-              <div className="bg-gray-700/30 border-2 border-gray-600 rounded-lg px-16 py-6 text-center">
-                <h3 className="text-xl font-semibold text-white">Data Lake Storage</h3>
-                <p className="text-sm text-gray-400 mt-1">HDFS & Analytics Platform</p>
-                <div className="mt-3">
-                  <span className="text-xs font-medium px-3 py-1 rounded-full bg-blue-500/20 text-blue-300">
-                    STORING
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <EnhancedTelemetry 
+          telemetryData={{
+            vehicleEvents: 1200,
+            dataProcessor: 950,
+            hdfsSink: 800,
+            totalEvents: 2100000
+          }}
+          components={telemetryComponents}
+          onComponentClick={(componentName, url) => {
+            if (url) {
+              window.open(url, '_blank');
+            } else {
+              console.log(`Clicked on ${componentName}`);
+            }
+          }}
+        />
       </div>
 
       {/* Component Details */}
