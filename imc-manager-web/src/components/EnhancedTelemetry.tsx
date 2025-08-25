@@ -872,18 +872,80 @@ const EnhancedTelemetry: React.FC<EnhancedTelemetryProps> = ({
           .style('filter', conn.type === 'external' ? 'drop-shadow(0 0 4px rgba(139, 92, 246, 0.3))' : 'drop-shadow(0 0 4px rgba(59, 130, 246, 0.3))')
           .style('stroke-dasharray', conn.type === 'external' ? '8,4,8,4' : 'none');
 
-        // Add animated data flow particles for data-flow connections
+        // Add animated data flow particles for data-flow connections (reduced count for performance)
         if (conn.type === 'data-flow') {
-          // Create flowing particles using the new createParticle function with staggered timing
-          for (let i = 0; i < 3; i++) {
-            setTimeout(() => {
-              createParticle(source, target, i, 'data-flow');
-            }, i * 800); // Stagger the start of each particle
-          }
+          // Create fewer flowing particles - just 1 per connection like the original
+          setTimeout(() => {
+            createParticle(source, target, 0, 'data-flow');
+          }, Math.random() * 2000); // Random delay to spread them out
         }
 
-        // Simplified external connection - no PXF animation to prevent blinking
-        // External table connections shown as dashed lines only
+        // Add PXF animation for external table connections (HDFS to Greenplum only)
+        if (conn.type === 'external' && conn.source === 'hadoop-hdfs' && conn.target === 'greenplum-db') {
+          // Create single PXF query animation that loops
+          const createPXFAnimation = () => {
+            if (!svg.node()) return; // Stop if component unmounted
+            
+            const pxfGroup = svg.append('g')
+              .attr('class', 'pxf-query')
+              .attr('transform', `translate(${source.x}, ${source.y})`);
+            
+            // Add small Greenplum-style background circle
+            pxfGroup.append('circle')
+              .attr('r', 12)
+              .attr('fill', '#4A90E2') // Greenplum blue
+              .attr('stroke', '#2E5C8A')
+              .attr('stroke-width', 1.5)
+              .attr('opacity', 0.9);
+            
+            // Add PXF text
+            pxfGroup.append('text')
+              .attr('text-anchor', 'middle')
+              .attr('dominant-baseline', 'middle')
+              .attr('font-family', 'monospace')
+              .attr('font-size', '8px')
+              .attr('font-weight', 'bold')
+              .attr('fill', 'white')
+              .text('PXF');
+            
+            // Calculate path from HDFS edge to Greenplum edge
+            const sourceRadius = 45;
+            const targetRadius = 45;
+            const dx = target.x - source.x;
+            const dy = target.y - source.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const sourceEndX = source.x + (dx / distance) * sourceRadius;
+            const sourceEndY = source.y + (dy / distance) * sourceRadius;
+            const targetStartX = target.x - (dx / distance) * targetRadius;
+            const targetStartY = target.y - (dy / distance) * targetRadius;
+            
+            // Animate along the curved path
+            pxfGroup.transition()
+              .duration(4000)
+              .ease(d3.easeCubicInOut)
+              .attrTween('transform', () => {
+                return (t: number) => {
+                  // Follow the external path curve (quadratic Bezier)
+                  const midX = (sourceEndX + targetStartX) / 2;
+                  const controlY = Math.min(sourceEndY, targetStartY) - 60;
+                  const t2 = t * t;
+                  const oneMinusT = 1 - t;
+                  const oneMinusT2 = oneMinusT * oneMinusT;
+                  const x = oneMinusT2 * sourceEndX + 2 * oneMinusT * t * midX + t2 * targetStartX;
+                  const y = oneMinusT2 * sourceEndY + 2 * oneMinusT * t * controlY + t2 * targetStartY;
+                  return `translate(${x}, ${y})`;
+                };
+              })
+              .on('end', () => {
+                pxfGroup.remove();
+                // Restart after delay
+                setTimeout(() => createPXFAnimation(), 3000);
+              });
+          };
+          
+          // Start the animation with initial delay
+          setTimeout(() => createPXFAnimation(), 2000);
+        }
 
         // Add arrow at the end of each path
         const arrowSize = 8;
