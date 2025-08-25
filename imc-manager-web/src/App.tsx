@@ -50,27 +50,11 @@ function Sidebar() {
       to: '/rag-pipeline', 
       label: 'RAG Pipeline', 
       icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        {/* Input document */}
-        <rect x="2" y="4" width="8" height="10" rx="1" fill="currentColor" opacity="0.1" stroke="currentColor"/>
-        {/* Text lines in document */}
-        <line x1="4" y1="6" x2="8" y2="6"/>
-        <line x1="4" y1="8" x2="8" y2="8"/>
-        <line x1="4" y1="10" x2="8" y2="10"/>
-        <line x1="4" y1="12" x2="6" y2="12"/>
-        
-        {/* Disintegration effect - document breaking into pieces */}
-        <path d="M12 6l2 2-2 2" stroke="currentColor" opacity="0.6"/>
-        
-        {/* Disintegrated pieces floating around */}
-        <rect x="16" y="4" width="3" height="2" rx="0.5" fill="currentColor" opacity="0.3" transform="rotate(15 17.5 5)"/>
-        <rect x="18" y="8" width="2" height="1.5" rx="0.5" fill="currentColor" opacity="0.4" transform="rotate(-10 19 8.75)"/>
-        <rect x="15" y="10" width="2.5" height="1" rx="0.5" fill="currentColor" opacity="0.3" transform="rotate(25 16.25 10.5)"/>
-        <rect x="17" y="12" width="2" height="1.5" rx="0.5" fill="currentColor" opacity="0.4" transform="rotate(-5 18 12.75)"/>
-        
-        {/* Connection lines showing transformation */}
-        <path d="M10 7l6 3" stroke="currentColor" opacity="0.4" strokeDasharray="2,2"/>
-        <path d="M10 9l6 5" stroke="currentColor" opacity="0.4" strokeDasharray="2,2"/>
-        <path d="M10 11l6 7" stroke="currentColor" opacity="0.4" strokeDasharray="2,2"/>
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14,2 14,8 20,8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10,9 9,9 8,9"/>
       </svg>
     },
     { 

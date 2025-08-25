@@ -207,27 +207,78 @@ public class ServiceController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Service not found: " + serviceName));
             }
             
-            // embedProc doesn't have a /files/processed endpoint, return empty response
+            // embedProc has /api/processing/files-processed endpoint
             if ("embedproc".equals(serviceName)) {
-                return ResponseEntity.ok(Map.of(
-                    "files", new ArrayList<>(),
-                    "processedCount", 0,
-                    "message", "embedProc service does not expose processed files endpoint"
-                ));
+                try {
+                    org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+                    ResponseEntity<Map<String, Object>> response = restTemplate.getForEntity(
+                        service.getUrl() + "/api/processing/files-processed", 
+                        (Class<Map<String, Object>>) (Class<?>) Map.class
+                    );
+                    
+                    if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                        Map<String, Object> embedProcData = response.getBody();
+                        
+                        // Extract filesProcessed from embedProc response
+                        Object filesProcessedObj = embedProcData.get("filesProcessed");
+                        int filesProcessed = (filesProcessedObj instanceof Number) ? 
+                            ((Number) filesProcessedObj).intValue() : 0;
+                        
+                        // Return in the format expected by the frontend
+                        return ResponseEntity.ok(Map.of(
+                            "files", new ArrayList<>(),
+                            "processedCount", filesProcessed,
+                            "filesTotal", embedProcData.get("filesTotal"),
+                            "timestamp", embedProcData.get("timestamp")
+                        ));
+                    } else {
+                        return ResponseEntity.ok(Map.of(
+                            "files", new ArrayList<>(),
+                            "processedCount", 0,
+                            "message", "embedProc files-processed endpoint unavailable"
+                        ));
+                    }
+                } catch (Exception e) {
+                    return ResponseEntity.ok(Map.of(
+                        "files", new ArrayList<>(),
+                        "processedCount", 0,
+                        "message", "Error accessing embedProc files-processed: " + e.getMessage()
+                    ));
+                }
             }
             
             // Proxy the request to get processed files (for textProc and hdfsWatcher)
             org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
             String endpoint = "textproc".equals(serviceName) ? "/api/files/processed" : "/files/processed";
-            ResponseEntity<Map<String, Object>> response = restTemplate.getForEntity(
-                service.getUrl() + endpoint, 
-                (Class<Map<String, Object>>) (Class<?>) Map.class
-            );
             
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                return ResponseEntity.ok(response.getBody());
+            if ("textproc".equals(serviceName)) {
+                // textproc returns an array, not a map
+                ResponseEntity<List> response = restTemplate.getForEntity(
+                    service.getUrl() + endpoint, 
+                    List.class
+                );
+                
+                if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                    List<?> files = response.getBody();
+                    return ResponseEntity.ok(Map.of(
+                        "files", files,
+                        "processedCount", files.size()
+                    ));
+                } else {
+                    return ResponseEntity.badRequest().body(Map.of("error", "Failed to get processed files from textproc"));
+                }
             } else {
-                return ResponseEntity.badRequest().body(Map.of("error", "Failed to get processed files"));
+                // hdfsWatcher returns a map
+                ResponseEntity<Map<String, Object>> response = restTemplate.getForEntity(
+                    service.getUrl() + endpoint, 
+                    (Class<Map<String, Object>>) (Class<?>) Map.class
+                );
+                
+                if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                    return ResponseEntity.ok(response.getBody());
+                } else {
+                    return ResponseEntity.badRequest().body(Map.of("error", "Failed to get processed files"));
+                }
             }
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Error getting processed files: " + e.getMessage()));
@@ -291,20 +342,20 @@ public class ServiceController {
                 errors.add("Failed to reset textProc: " + e.getMessage());
             }
             
-            // TODO: Add embedProc reset when available
-            // try {
-            //     ServiceRegistryService.ServiceInfo embedService = services.stream()
-            //         .filter(s -> "embedproc".equals(s.getName()))
-            //         .findFirst()
-            //         .orElse(null);
-            //         
-            //     if (embedService != null && embedService.getUrl() != null) {
-            //         restTemplate.postForEntity(embedService.getUrl() + "/api/processing/reset", null, Map.class);
-            //         results.add("Reset embedProc processing");
-            //     }
-            // } catch (Exception e) {
-            //     errors.add("Failed to reset embedProc: " + e.getMessage());
-            // }
+            // Reset embedProc processing counters
+            try {
+                ServiceRegistryService.ServiceInfo embedService = services.stream()
+                    .filter(s -> "embedproc".equals(s.getName()))
+                    .findFirst()
+                    .orElse(null);
+                    
+                if (embedService != null && embedService.getUrl() != null) {
+                    restTemplate.postForEntity(embedService.getUrl() + "/api/processing/reset-counters", null, Map.class);
+                    results.add("Reset embedProc processing counters");
+                }
+            } catch (Exception e) {
+                errors.add("Failed to reset embedProc: " + e.getMessage());
+            }
             
             Map<String, Object> response = new HashMap<>();
             response.put("status", "success");
