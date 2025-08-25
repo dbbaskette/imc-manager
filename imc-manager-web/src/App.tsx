@@ -394,6 +394,13 @@ function RAGPipeline() {
   const [reprocessing, setReprocessing] = useState(false);
   const [restartingPipeline, setRestartingPipeline] = useState(false);
   
+  // Persistent total files count to prevent jumping to 0
+  const [totalFilesCount, setTotalFilesCount] = useState(() => {
+    // Initialize from localStorage to persist across re-renders
+    const saved = localStorage.getItem('imc-totalFilesCount');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+  
   // Pipeline progress data
   const [pipelineProgress, setPipelineProgress] = useState<{
     hdfsFiles: number;
@@ -439,7 +446,7 @@ function RAGPipeline() {
         
         if (data.error) {
           console.warn('API returned error:', data.error);
-          setHdfsFiles([]);
+          // Don't clear hdfsFiles on API errors - preserve existing data
         } else {
           const files = (data.files || []).map((file: any) => ({
             name: file.name || file.filename || file.path || 'unknown',
@@ -449,14 +456,21 @@ function RAGPipeline() {
           
           console.log(`Found ${files.length} files:`, files);
           setHdfsFiles(files);
+          // Use totalFiles from hdfsWatcher API - this is the stable count of processed files
+          if (data.totalFiles && data.totalFiles > 0) {
+            const newCount = data.totalFiles;
+            setTotalFilesCount(newCount);
+            localStorage.setItem('imc-totalFilesCount', newCount.toString());
+            console.log(`Updated totalFilesCount to ${newCount} from hdfsWatcher totalFiles`);
+          }
         }
       } else {
         console.warn('Failed to fetch HDFS files:', response.status, response.statusText);
-        setHdfsFiles([]);
+        // Don't clear hdfsFiles on temporary failures - keep existing data
       }
     } catch (error) {
       console.error('Failed to fetch HDFS files:', error);
-      setHdfsFiles([]);
+      // Don't clear hdfsFiles on temporary failures - keep existing data
     } finally {
       setFilesLoading(false);
     }
@@ -563,21 +577,31 @@ function RAGPipeline() {
       // Get textProc processed files
       if (textProcResponse && textProcResponse.ok) {
         const textData = await textProcResponse.json();
-        textProcFiles = textData.files ? textData.files.length : (textData.processedCount || 0);
+        textProcFiles = (textData.files && textData.files.length > 0) ? textData.files.length : (textData.processedCount || 0);
       }
 
       // Get embedProc processed files  
       if (embedProcResponse && embedProcResponse.ok) {
         const embedData = await embedProcResponse.json();
-        embedProcFiles = embedData.files ? embedData.files.length : (embedData.processedCount || 0);
+        embedProcFiles = (embedData.files && embedData.files.length > 0) ? embedData.files.length : (embedData.processedCount || 0);
+        console.log('EmbedProc API response:', embedData, 'Extracted count:', embedProcFiles);
       }
 
-      setPipelineProgress({
-        hdfsFiles: hdfsFiles.length,
+      // Use persistent total files count to prevent jumping to 0
+      // FIXED: Always use totalFilesCount if it's been set, never allow hdfsFiles to drop to 0
+      const currentHdfsCount = totalFilesCount > 0 ? totalFilesCount : 0;
+      
+      console.log('DEBUG: hdfsFiles.length =', hdfsFiles.length, 'totalFilesCount =', totalFilesCount, 'currentHdfsCount =', currentHdfsCount);
+
+      const newProgress = {
+        hdfsFiles: currentHdfsCount,
         textProcFiles,
         embedProcFiles,
         completeFiles: embedProcFiles // Complete = embedProc finished
-      });
+      };
+      
+      console.log('Setting pipeline progress:', newProgress);
+      setPipelineProgress(newProgress);
 
     } catch (error) {
       console.error('Error fetching pipeline progress:', error);
@@ -611,7 +635,9 @@ function RAGPipeline() {
           }
           alert(message);
           
-          // Refresh everything after restart
+          // Reset persistent count and refresh everything after restart
+          setTotalFilesCount(0);
+          localStorage.setItem('imc-totalFilesCount', '0');
           setTimeout(() => {
             fetchHdfsFiles();
             fetchServices();
@@ -1017,17 +1043,41 @@ function RAGPipeline() {
             <h3 className="text-lg font-semibold text-white">Pipeline Progress</h3>
             <p className="text-sm text-gray-400 mt-1">Real-time document processing flow</p>
           </div>
-          <button
-            onClick={restartPipeline}
-            disabled={restartingPipeline}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              restartingPipeline 
-                ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
-                : 'bg-red-600 hover:bg-red-700 text-white'
-            }`}
-          >
-            {restartingPipeline ? 'Restarting Pipeline...' : 'Restart Pipeline'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                // Start all services
+                services.filter(s => s.status !== 'STARTED').forEach(service => {
+                  startService(service.name);
+                });
+              }}
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-green-600 hover:bg-green-700 text-white transition-colors"
+            >
+              Start All
+            </button>
+            <button
+              onClick={() => {
+                // Stop all services
+                services.filter(s => s.status === 'STARTED').forEach(service => {
+                  stopService(service.name);
+                });
+              }}
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-red-600 hover:bg-red-700 text-white transition-colors"
+            >
+              Stop All
+            </button>
+            <button
+              onClick={restartPipeline}
+              disabled={restartingPipeline}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                restartingPipeline 
+                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                  : 'bg-orange-600 hover:bg-orange-700 text-white'
+              }`}
+            >
+              {restartingPipeline ? 'Restarting Pipeline...' : 'Restart Pipeline'}
+            </button>
+          </div>
         </div>
         
         <div className="p-6">
@@ -1118,13 +1168,34 @@ function RAGPipeline() {
           <div className="mt-6">
             <div className="flex justify-between text-sm text-gray-400 mb-2">
               <span>Processing Progress</span>
-              <span>{pipelineProgress.hdfsFiles > 0 ? Math.round((pipelineProgress.completeFiles / pipelineProgress.hdfsFiles) * 100) : 0}% Complete</span>
+              <span>{(() => {
+                // Calculate incremental progress across 3 stages: HDFS (33%), TextProc (33%), EmbedProc (33%)
+                if (pipelineProgress.hdfsFiles === 0) return 0;
+                
+                const totalFiles = pipelineProgress.hdfsFiles;
+                const textProgress = (pipelineProgress.textProcFiles / totalFiles) * 33.33; // 0-33%
+                const embedProgress = (pipelineProgress.embedProcFiles / totalFiles) * 33.33; // 0-33%
+                const hdfsProgress = 33.33; // HDFS stage is complete when we have files
+                
+                const totalProgress = hdfsProgress + textProgress + embedProgress;
+                return Math.round(totalProgress);
+              })()}% Complete</span>
             </div>
             <div className="w-full bg-gray-700 rounded-full h-2">
               <div 
                 className="bg-gradient-to-r from-blue-500 via-purple-500 via-green-500 to-teal-500 h-2 rounded-full transition-all duration-300"
                 style={{
-                  width: `${pipelineProgress.hdfsFiles > 0 ? (pipelineProgress.completeFiles / pipelineProgress.hdfsFiles) * 100 : 0}%`
+                  width: `${(() => {
+                    // Calculate incremental progress across 3 stages
+                    if (pipelineProgress.hdfsFiles === 0) return 0;
+                    
+                    const totalFiles = pipelineProgress.hdfsFiles;
+                    const textProgress = (pipelineProgress.textProcFiles / totalFiles) * 33.33;
+                    const embedProgress = (pipelineProgress.embedProcFiles / totalFiles) * 33.33;
+                    const hdfsProgress = 33.33;
+                    
+                    return hdfsProgress + textProgress + embedProgress;
+                  })()}%`
                 }}
               ></div>
             </div>
@@ -1139,17 +1210,19 @@ function RAGPipeline() {
             <h3 className="text-lg font-semibold text-white">Pipeline Files</h3>
             <p className="text-sm text-gray-400 mt-1">Document processing status and file management</p>
           </div>
-          <button
-            onClick={reprocessFiles}
-            disabled={reprocessing}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              reprocessing 
-                ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
-            }`}
-          >
-            {reprocessing ? 'Reprocessing...' : 'Reprocess Files'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={reprocessFiles}
+              disabled={reprocessing}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                reprocessing 
+                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+              }`}
+            >
+              {reprocessing ? 'Reprocessing...' : 'Reprocess Files'}
+            </button>
+          </div>
         </div>
         <div className="p-6">
           <div className="bg-gray-700/30 rounded-lg border border-gray-600">
@@ -1187,7 +1260,7 @@ function RAGPipeline() {
                       // Determine overall pipeline stage for this file
                       const getOverallStage = () => {
                         if (displayStatus === 'Processed') {
-                          // Check if file has been through all stages
+                          // Check if file has been through all stages - start from the furthest stage
                           if (pipelineProgress.completeFiles > 0) return 'Complete';
                           if (pipelineProgress.embedProcFiles > 0) return 'Embedding';
                           if (pipelineProgress.textProcFiles > 0) return 'Text Processing';
