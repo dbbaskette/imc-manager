@@ -1492,10 +1492,97 @@ function Deployment() {
 }
 
 function Settings() {
+  const [particleMaxCount, setParticleMaxCount] = useState(() => {
+    const saved = localStorage.getItem('imc-particle-max-count');
+    return saved ? parseInt(saved, 10) : 4;
+  });
+
+  const handleParticleCountChange = (newCount: number) => {
+    setParticleMaxCount(newCount);
+    localStorage.setItem('imc-particle-max-count', newCount.toString());
+    
+    // Dispatch custom event to notify the telemetry component
+    const event = new CustomEvent('particle-settings-changed', {
+      detail: { maxParticles: newCount }
+    });
+    window.dispatchEvent(event);
+  };
+
   return (
     <div className="p-8">
       <h2 className="text-2xl font-bold text-white mb-6">Settings</h2>
-      <p className="text-gray-300">Configuration options coming soon...</p>
+      <div className="space-y-6">
+        {/* Particle Animation Settings */}
+        <div className="bg-gray-800/50 border border-gray-700 rounded-lg shadow-lg p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Particle Animation Settings</h3>
+          <p className="text-sm text-gray-400 mb-6">Configure the visual effects for the telemetry data flow</p>
+          
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="particle-count" className="block text-sm font-medium text-gray-300 mb-2">
+                Maximum Particles per Connection
+              </label>
+              <div className="flex items-center gap-4">
+                <input
+                  id="particle-count"
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={particleMaxCount}
+                  onChange={(e) => handleParticleCountChange(parseInt(e.target.value, 10))}
+                  className="flex-1 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+                />
+                <div className="min-w-[60px] bg-gray-700 border border-gray-600 rounded px-3 py-1 text-center">
+                  <span className="text-white font-medium">{particleMaxCount}</span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Controls how many animated particles flow between each connection. Lower values improve performance.
+              </p>
+            </div>
+            
+            <div className="border-t border-gray-600 pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-300">Current Setting</h4>
+                  <p className="text-xs text-gray-500">Maximum {particleMaxCount} particles per connection segment</p>
+                </div>
+                <button
+                  onClick={() => handleParticleCountChange(4)}
+                  className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-xs font-medium text-white transition-colors"
+                >
+                  Reset to Default (4)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Performance Information */}
+        <div className="bg-gray-800/50 border border-gray-700 rounded-lg shadow-lg p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Performance Tips</h3>
+          <div className="space-y-3 text-sm text-gray-300">
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <strong>Optimal Performance:</strong> 1-4 particles per connection provides smooth animation without performance impact.
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <strong>Moderate Load:</strong> 5-7 particles may cause slight performance reduction on slower devices.
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <strong>High Load:</strong> 8+ particles may cause noticeable slowdowns and should be used with caution.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
