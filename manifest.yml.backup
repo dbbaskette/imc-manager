@@ -3,7 +3,7 @@ applications:
     memory: 1G
     instances: 1
     # Push the pre-built JAR (contains frontend static resources)
-    path: ./imc-manager-api/target/imc-manager-api-1.2.0.jar
+    path: ./imc-manager-api/target/imc-manager-api-2.0.0.jar
     buildpacks:
       - java_buildpack_offline
     env:

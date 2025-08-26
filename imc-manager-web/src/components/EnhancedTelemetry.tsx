@@ -60,6 +60,13 @@ const EnhancedTelemetry: React.FC<EnhancedTelemetryProps> = ({
   const svgRef = useRef<SVGSVGElement>(null);
   const [componentMetrics, setComponentMetrics] = useState<ComponentMetrics>({});
   const [loading, setLoading] = useState(true);
+  
+  // Particle management system with dynamic settings
+  const particleCounters = useRef<Map<string, number>>(new Map());
+  const [maxParticlesPerSegment, setMaxParticlesPerSegment] = useState(() => {
+    const saved = localStorage.getItem('imc-particle-max-count');
+    return saved ? parseInt(saved, 10) : 4;
+  });
 
   // API Integration Functions - from SmartDriver UI
   const fetchMetrics = async () => {
@@ -268,18 +275,52 @@ const EnhancedTelemetry: React.FC<EnhancedTelemetryProps> = ({
     { source: 'hadoop-hdfs', target: 'greenplum-db', type: 'external' }
   ];
 
-  // Function to create animated particles that follow the exact curved paths
+  // Function to create animated particles with count management
   const createParticle = (source: TelemetryComponent, target: TelemetryComponent, index: number, connectionType: string) => {
     if (!svgRef.current) return;
     
+    // Create unique segment key
+    const segmentKey = `${source.id}-${target.id}`;
+    const currentCount = particleCounters.current.get(segmentKey) || 0;
+    
+    // Don't create particle if we've reached the limit
+    if (currentCount >= maxParticlesPerSegment) {
+      return;
+    }
+    
+    // Increment counter
+    particleCounters.current.set(segmentKey, currentCount + 1);
+    
     const svg = d3.select(svgRef.current);
+    // Enhanced particle styling with different effects for PXF (external) connections
+    const isPXF = connectionType === 'external';
     const particle = svg.append('circle')
-      .attr('r', 5) // Bigger particles
-      .attr('fill', '#34D399') // Green color like original
+      .attr('r', isPXF ? 8 : 6) // Bigger PXF particles
+      .attr('fill', isPXF ? '#F59E0B' : '#34D399') // Orange for PXF, green for others
       .attr('stroke', '#F9FAFB')
-      .attr('stroke-width', 1.5)
-      .attr('opacity', 0.9)
-      .style('filter', 'drop-shadow(0 0 8px #34D399)'); // Glowing effect
+      .attr('stroke-width', isPXF ? 3 : 2)
+      .attr('opacity', 0.95)
+      .style('filter', isPXF ? 
+        'drop-shadow(0 0 20px #F59E0B) drop-shadow(0 0 35px #F59E0B80) drop-shadow(0 0 50px #F59E0B40)' : // Triple glow for PXF
+        'drop-shadow(0 0 15px #34D399) drop-shadow(0 0 25px #34D39980)' // Double glow for normal particles
+      );
+    
+    // Add text label for PXF particles
+    const particleGroup = svg.append('g');
+    particleGroup.append(() => particle.node());
+    
+    if (isPXF) {
+      particleGroup.append('text')
+        .attr('x', 0)
+        .attr('y', 4)
+        .attr('text-anchor', 'middle')
+        .attr('font-family', 'Arial, sans-serif')
+        .attr('font-size', '8px')
+        .attr('font-weight', 'bold')
+        .attr('fill', '#1F2937')
+        .attr('opacity', 1)
+        .text('PXF');
+    }
     
     const duration = 2000 + (index * 500); // Stagger particle timing
     
@@ -298,7 +339,7 @@ const EnhancedTelemetry: React.FC<EnhancedTelemetryProps> = ({
     const targetStartX = target.x - (dx / distance) * targetRadius;
     const targetStartY = target.y - (dy / distance) * targetRadius;
     
-    particle.transition()
+    particleGroup.transition()
       .duration(duration)
       .ease(d3.easeCubicInOut) // Smooth easing like original
       .attrTween('transform', () => {
@@ -335,9 +376,17 @@ const EnhancedTelemetry: React.FC<EnhancedTelemetryProps> = ({
         };
       })
       .on('end', () => {
-        // Restart animation by creating a new particle
-        createParticle(source, target, index, connectionType);
-        particle.remove();
+        // Decrement counter when particle completes
+        const segmentKey = `${source.id}-${target.id}`;
+        const currentCount = particleCounters.current.get(segmentKey) || 0;
+        particleCounters.current.set(segmentKey, Math.max(0, currentCount - 1));
+        
+        particleGroup.remove();
+        
+        // Restart animation by creating a new particle after a delay
+        setTimeout(() => {
+          createParticle(source, target, index, connectionType);
+        }, 1000 + Math.random() * 2000); // Random delay between 1-3 seconds
       });
   };
 
@@ -818,6 +867,9 @@ const EnhancedTelemetry: React.FC<EnhancedTelemetryProps> = ({
 
     // Clear previous content
     svg.selectAll("*").remove();
+    
+    // Reset particle counters when re-rendering
+    particleCounters.current.clear();
 
     const telemetryComponents = getTelemetryComponents();
 
@@ -827,6 +879,7 @@ const EnhancedTelemetry: React.FC<EnhancedTelemetryProps> = ({
       .enter()
       .append('g')
       .attr('class', 'component')
+      .attr('data-id', d => d.id) // Add data-id for updating without re-rendering
       .attr('transform', d => `translate(${d.x}, ${d.y})`)
       .style('cursor', d => d.clickable ? 'pointer' : 'default');
 
@@ -872,12 +925,14 @@ const EnhancedTelemetry: React.FC<EnhancedTelemetryProps> = ({
           .style('filter', conn.type === 'external' ? 'drop-shadow(0 0 4px rgba(139, 92, 246, 0.3))' : 'drop-shadow(0 0 4px rgba(59, 130, 246, 0.3))')
           .style('stroke-dasharray', conn.type === 'external' ? '8,4,8,4' : 'none');
 
-        // Add animated data flow particles for data-flow connections (reduced count for performance)
+        // Add animated data flow particles for data-flow connections (managed count)
         if (conn.type === 'data-flow') {
-          // Create fewer flowing particles - just 1 per connection like the original
-          setTimeout(() => {
-            createParticle(source, target, 0, 'data-flow');
-          }, Math.random() * 2000); // Random delay to spread them out
+          // Create initial particles with staggered timing to spread them out
+          for (let i = 0; i < 2; i++) { // Start with 2 particles per segment
+            setTimeout(() => {
+              createParticle(source, target, i, 'data-flow');
+            }, i * 1500 + Math.random() * 1000); // Staggered delays
+          }
         }
 
         // Add PXF animation for external table connections (HDFS to Greenplum only)
@@ -947,12 +1002,6 @@ const EnhancedTelemetry: React.FC<EnhancedTelemetryProps> = ({
           setTimeout(() => createPXFAnimation(), 2000);
         }
 
-        // Add arrow at the end of each path
-        const arrowSize = 8;
-        svg.append('polygon')
-          .attr('points', `${target.x - arrowSize},${target.y - arrowSize} ${target.x},${target.y} ${target.x - arrowSize},${target.y + arrowSize}`)
-          .attr('fill', conn.type === 'data-flow' ? '#3B82F6' : '#6B7280')
-          .attr('opacity', 0.8);
       }
     });
 
@@ -1177,7 +1226,42 @@ const EnhancedTelemetry: React.FC<EnhancedTelemetryProps> = ({
           .style('filter', d.status === 'healthy' ? 'drop-shadow(0 0 15px rgba(16, 185, 129, 0.8))' : 'drop-shadow(0 0 8px rgba(107, 114, 128, 0.5))');
       });
 
-  }, [componentMetrics, loading]); // Re-render when data changes
+  }, [loading]); // Only re-render when loading state changes, not when metrics update
+
+  // Separate useEffect to update component status without re-rendering entire visualization
+  useEffect(() => {
+    if (!svgRef.current || loading) return;
+    
+    const svg = d3.select(svgRef.current);
+    const telemetryComponents = getTelemetryComponents();
+    
+    // Update existing component status indicators without clearing animations
+    telemetryComponents.forEach(component => {
+      const componentGroup = svg.select(`g.component[data-id="${component.id}"]`);
+      if (!componentGroup.empty()) {
+        // Update status circle color
+        componentGroup.select('circle')
+          .transition()
+          .duration(300)
+          .attr('fill', component.status === 'healthy' ? '#10B981' : 
+                       component.status === 'warning' ? '#F59E0B' : 
+                       component.status === 'error' ? '#EF4444' : '#6B7280')
+          .style('filter', component.status === 'healthy' ? 'drop-shadow(0 0 15px rgba(16, 185, 129, 0.8))' : 'drop-shadow(0 0 8px rgba(107, 114, 128, 0.5))');
+      }
+    });
+  }, [componentMetrics]); // Update when metrics change, but don't clear entire visualization
+
+  // Listen for particle settings changes
+  useEffect(() => {
+    const handleSettingsChange = (event: CustomEvent) => {
+      const { maxParticles } = event.detail;
+      setMaxParticlesPerSegment(maxParticles);
+      console.log('🎨 Particle settings updated - Max particles per segment:', maxParticles);
+    };
+
+    window.addEventListener('particle-settings-changed' as any, handleSettingsChange);
+    return () => window.removeEventListener('particle-settings-changed' as any, handleSettingsChange);
+  }, []);
 
   // Add event listeners for the Safe Driver Scoring panel
   useEffect(() => {
